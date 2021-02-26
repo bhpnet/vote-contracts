@@ -1,9 +1,12 @@
 pragma solidity >=0.6.0 <0.8.0;
 
 contract Params {
+    //是否初始化
     bool public initialized;
-    
+
+    //合约拥有者
     address public owner;
+    //白名单
     mapping(address=>bool) public whiteList;
     
     modifier onlyWhiteList {
@@ -30,27 +33,27 @@ contract Params {
 
 contract Proposal is Params {
 
+    //提案详情
     struct ProposalInfo {
-        // who propose this proposal
+        // 提案人
         address proposer;
-        // optional detail info of proposal
+        // 标题
+        string title;
+        // 提案细节
         string details;
-        // time create proposal
+        // 提案创建时间
         uint256 createTime;
-        //
-        // vote info
-        //
-        // number agree this proposal
+        // 提案同意的票数
         uint256 agree;
-        // number reject this proposal
+        // 提案反对的票数
         uint256 reject;
-        // means you can get proposal of current vote.
-        bool resultExist;
-        string title;               // 标题
+        //投票开始时间
         uint256 votingStartTime;
+        //投票结束时间
         uint256 votingEndTime;
     }
 
+    //投票详情
     struct VoteInfo {
         address voter;
         uint256 voteTime;
@@ -83,15 +86,16 @@ contract Proposal is Params {
     );
 
 
+    //初始化
     function initialize() external onlyNotInitialized {
         owner = msg.sender;
         initialized = true;
     }
 
+    //创建提案
     function createProposal(string calldata _title,string calldata _details, uint256 _votingStartTime, uint256 _votingEndTime)
         external onlyWhiteList
     {
-        
 
         // generate proposal id
         bytes32 id = keccak256(
@@ -114,6 +118,7 @@ contract Proposal is Params {
         emit LogCreateProposal(id, msg.sender, block.timestamp);
     }
 
+    //投票
     function voteProposal(bytes32 id, bool auth)
         external
         returns (bool)
@@ -147,12 +152,14 @@ contract Proposal is Params {
         }
         return true;
     }
-    
+
+    //添加白名单
     function addWhiteList(address _addr) external onlyOwner{
         whiteList[_addr] = true;
         emit WhiteListAdded(_addr);
     }
-    
+
+    //修改提案
     function editProposal(bytes32 _id, string calldata _title,string calldata _details, uint256 _votingStartTime, uint256 _votingEndTime)
             external onlyWhiteList
     {
