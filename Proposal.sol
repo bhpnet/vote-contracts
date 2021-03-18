@@ -8,12 +8,12 @@ contract Params {
     address public owner;
     //白名单
     mapping(address=>bool) public whiteList;
-    
+
     modifier onlyWhiteList {
-        require(whiteList[msg.sender]);
+        require(whiteList[msg.sender], "whiteList only");
         _;
     }
-    
+
     modifier onlyOwner() {
         require(msg.sender == owner, "Owner only");
         _;
@@ -63,6 +63,7 @@ contract Proposal is Params {
 
     mapping(bytes32 => ProposalInfo) public proposals;
     mapping(address => mapping(bytes32 => VoteInfo)) public votes;
+    bytes32[] proposalIds;
 
 
     event LogCreateProposal(
@@ -73,10 +74,11 @@ contract Proposal is Params {
     event LogVote(
         bytes32 indexed id,
         address indexed voter,
+        uint256 weight,
         bool auth,
         uint256 time
     );
-    event WhiteListAdded(
+    event LogAddWhiteList(
         address indexed addr
     );
     event LogEditProposal(
@@ -90,11 +92,12 @@ contract Proposal is Params {
     function initialize() external onlyNotInitialized {
         owner = msg.sender;
         initialized = true;
+        whiteList[msg.sender] = true;
     }
 
     //创建提案
     function createProposal(string calldata _title,string calldata _details, uint256 _votingStartTime, uint256 _votingEndTime)
-        external onlyWhiteList
+    external onlyWhiteList onlyInitialized
     {
 
         // generate proposal id
@@ -102,6 +105,7 @@ contract Proposal is Params {
             abi.encodePacked(msg.sender, _title, _details, block.timestamp)
         );
         require(_votingEndTime > block.timestamp, "time error");
+        require(_votingEndTime >= _votingStartTime, "time error");
         require(bytes(_title).length <= 500, "Title too long");
         require(bytes(_details).length <= 3000, "Details too long");
         require(proposals[id].createTime == 0, "Proposal already exists");
@@ -115,34 +119,35 @@ contract Proposal is Params {
         proposal.votingEndTime = _votingEndTime;
 
         proposals[id] = proposal;
+        proposalIds.push(id);
         emit LogCreateProposal(id, msg.sender, block.timestamp);
     }
 
     //投票
     function voteProposal(bytes32 id, bool auth)
-        external
-        returns (bool)
+    external
+    returns (bool)
     {
         require(proposals[id].createTime != 0, "Proposal not exist");
         require(
             votes[msg.sender][id].voteTime == 0,
             "You can't vote for a proposal twice"
         );
-         require(
+        require(
             block.timestamp >= proposals[id].votingStartTime,
             "Proposal no start"
         );
         require(
-            block.timestamp < proposals[id].votingEndTime,
+            block.timestamp <= proposals[id].votingEndTime,
             "Proposal expired"
         );
-        require(msg.sender.balance >= 10 ether,"no access");
-        
+        require(msg.sender.balance >= 1 ether,"no access");
+
         votes[msg.sender][id].voteTime = block.timestamp;
         votes[msg.sender][id].voter = msg.sender;
         votes[msg.sender][id].auth = auth;
         votes[msg.sender][id].weight = msg.sender.balance;
-        emit LogVote(id, msg.sender, auth, block.timestamp);
+        emit LogVote(id, msg.sender, msg.sender.balance, auth, block.timestamp);
 
         // update dst status if proposal is passed
         if (auth) {
@@ -156,15 +161,16 @@ contract Proposal is Params {
     //添加白名单
     function addWhiteList(address _addr) external onlyOwner{
         whiteList[_addr] = true;
-        emit WhiteListAdded(_addr);
+        emit LogAddWhiteList(_addr);
     }
 
     //修改提案
     function editProposal(bytes32 _id, string calldata _title,string calldata _details, uint256 _votingStartTime, uint256 _votingEndTime)
-            external onlyWhiteList
+    external onlyWhiteList
     {
         require(proposals[_id].proposer == msg.sender, "no proposer");
         require(_votingEndTime > block.timestamp, "time error");
+        require(_votingEndTime >= _votingStartTime, "time error");
         require(bytes(_title).length <= 500, "Title too long");
         require(bytes(_details).length <= 3000, "Details too long");
 
@@ -173,5 +179,17 @@ contract Proposal is Params {
         proposals[_id].votingStartTime = _votingStartTime;
         proposals[_id].votingEndTime = _votingEndTime;
         emit LogEditProposal(_id, msg.sender, block.timestamp);
+    }
+
+    function proposalIdsList(uint _page, uint _len) external view returns (bytes32[] memory) {
+        bytes32[] memory ids = new bytes32[](_len);
+
+        for(uint i = (_len * (_page-1)); i < proposalIds.length; i++) {
+            if ((i-(_len * (_page-1))) < _len) {
+                ids[i-(_len * (_page-1))] = proposalIds[i];
+            }
+        }
+
+        return ids;
     }
 }
