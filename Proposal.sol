@@ -101,7 +101,7 @@ contract Proposal is Params {
 
     //创建提案
     function createProposal(string calldata _title,string calldata _details, uint256 _votingStartTime, uint256 _votingEndTime)
-    external onlyWhiteList onlyInitialized
+    external onlyInitialized onlyWhiteList
     {
 
         // generate proposal id
@@ -186,13 +186,15 @@ contract Proposal is Params {
     }
 
     //提案id分页查询
-    function proposalIdsList(uint _page, uint _len) external view returns (bytes32[] memory) {
-        bytes32[] memory ids = new bytes32[](_len);
-
-        for(uint i = (_len * (_page-1)); i < proposalIds.length && i < (_len * _page); i++) {
-            ids[i-(_len * (_page-1))] = proposalIds[i];
-        }
-
+    function proposalIdsList(uint _page, uint _size) external view returns (bytes32[] memory) {
+        bytes32[] memory ids = new bytes32[](_size);
+        uint from = (_page-1) * _size;
+        uint to = _page * _size > proposalIds.length ? proposalIds.length : _page * _size;
+        
+        for(uint i = from; i < to; i++) {
+            ids[i-from] = proposalIds[i];
+        }    
+       
         return ids;
     }
 }
