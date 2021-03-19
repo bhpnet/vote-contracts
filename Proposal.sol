@@ -55,9 +55,13 @@ contract Proposal is Params {
 
     //投票详情
     struct VoteInfo {
+        //投票者
         address voter;
+        //投票时间
         uint256 voteTime;
+        //投票选择
         bool auth;
+        //投票权重
         uint256 weight;
     }
 
@@ -181,6 +185,7 @@ contract Proposal is Params {
         emit LogEditProposal(_id, msg.sender, block.timestamp);
     }
 
+    //提案id分页查询
     function proposalIdsList(uint _page, uint _len) external view returns (bytes32[] memory) {
         bytes32[] memory ids = new bytes32[](_len);
 
