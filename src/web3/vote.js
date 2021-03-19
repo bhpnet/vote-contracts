@@ -200,8 +200,14 @@ export async function proposals(wallet) {
     return contract.methods.proposals().call({from: wallet.address})
 }
 
-//获取本人投票信息
-export async function votes(wallet) {
+//获取本人投票信息：返回投票人地址、投票时间、投票布尔值、投票权重，其中如歌投票时间和权重为0表示此用户未投票该提案
+export async function votes(wallet,address,id) {
     const contract = new wallet.web3.eth.Contract(ProposalVote.abi, voteAddress)
-    return contract.methods.votes().call({from: wallet.address})
+    return contract.methods.votes(address,id).call({from: wallet.address})
+}
+
+//分页查询返回提案id列表
+export async function proposalIdsList(wallet,page,size) {
+    const contract = new wallet.web3.eth.Contract(ProposalVote.abi, voteAddress)
+    return contract.methods.proposalIdsList(page,size).call({from: wallet.address})
 }
