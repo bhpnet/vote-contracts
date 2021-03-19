@@ -189,12 +189,8 @@ contract Proposal is Params {
     function proposalIdsList(uint _page, uint _len) external view returns (bytes32[] memory) {
         bytes32[] memory ids = new bytes32[](_len);
 
-        for(uint i = (_len * (_page-1)); i < proposalIds.length; i++) {
-            if ((i-(_len * (_page-1))) < _len) {
-                ids[i-(_len * (_page-1))] = proposalIds[i];
-            }else{
-                break;
-            }
+        for(uint i = (_len * (_page-1)); i < proposalIds.length && i < (_len * _page); i++) {
+            ids[i-(_len * (_page-1))] = proposalIds[i];
         }
 
         return ids;
