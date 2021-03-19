@@ -10,7 +10,7 @@ contract Params {
     mapping(address=>bool) public whiteList;
 
     modifier onlyWhiteList {
-        require(whiteList[msg.sender], "whiteList only");
+        require(whiteList[msg.sender], "WhiteList only");
         _;
     }
 
@@ -104,8 +104,8 @@ contract Proposal is Params {
         bytes32 id = keccak256(
             abi.encodePacked(msg.sender, _title, _details, block.timestamp)
         );
-        require(_votingEndTime > block.timestamp, "time error");
-        require(_votingEndTime >= _votingStartTime, "time error");
+        require(_votingEndTime > block.timestamp, "The end time must be greater than the current time");
+        require(_votingEndTime > _votingStartTime, "The end time must be greater than the start time");
         require(bytes(_title).length <= 500, "Title too long");
         require(bytes(_details).length <= 3000, "Details too long");
         require(proposals[id].createTime == 0, "Proposal already exists");
@@ -141,7 +141,7 @@ contract Proposal is Params {
             block.timestamp <= proposals[id].votingEndTime,
             "Proposal expired"
         );
-        require(msg.sender.balance >= 1 ether,"no access");
+        require(msg.sender.balance >= 1 ether,"Assets must be greater than 1BHP");
 
         votes[msg.sender][id].voteTime = block.timestamp;
         votes[msg.sender][id].voter = msg.sender;
@@ -168,9 +168,9 @@ contract Proposal is Params {
     function editProposal(bytes32 _id, string calldata _title,string calldata _details, uint256 _votingStartTime, uint256 _votingEndTime)
     external onlyWhiteList
     {
-        require(proposals[_id].proposer == msg.sender, "no proposer");
-        require(_votingEndTime > block.timestamp, "time error");
-        require(_votingEndTime >= _votingStartTime, "time error");
+        require(proposals[_id].proposer == msg.sender, "No such proposer");
+        require(_votingEndTime > block.timestamp, "The end time must be greater than the current time");
+        require(_votingEndTime > _votingStartTime, "The end time must be greater than the start time");
         require(bytes(_title).length <= 500, "Title too long");
         require(bytes(_details).length <= 3000, "Details too long");
 
@@ -187,6 +187,8 @@ contract Proposal is Params {
         for(uint i = (_len * (_page-1)); i < proposalIds.length; i++) {
             if ((i-(_len * (_page-1))) < _len) {
                 ids[i-(_len * (_page-1))] = proposalIds[i];
+            }else{
+                break;
             }
         }
 
